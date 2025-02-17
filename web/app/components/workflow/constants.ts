@@ -337,7 +337,9 @@ export const NODES_INITIAL_DATA = {
     ...ListFilterDefault.defaultValue,
   },
 }
-export const MAX_ITERATION_PARALLEL_NUM = 10
+
+
+export const MAX_ITERATION_PARALLEL_NUM = 100
 export const MIN_ITERATION_PARALLEL_NUM = 1
 export const DEFAULT_ITER_TIMES = 1
 export const NODE_WIDTH = 240
@@ -358,7 +360,7 @@ export const ITERATION_PADDING = {
   bottom: 20,
   left: 16,
 }
-export const PARALLEL_LIMIT = 50
+export const PARALLEL_LIMIT = 100
 export const PARALLEL_DEPTH_LIMIT = 3
 
 export const RETRIEVAL_OUTPUT_STRUCT = `{
