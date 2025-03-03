@@ -72,7 +72,8 @@ class MilvusVector(BaseVector):
         self._client = self._init_client(config)
         self._consistency_level = "Session"  # Consistency level for Milvus operations
         self._fields: list[str] = []  # List of fields in the collection
-        self._hybrid_search_enabled = self._check_hybrid_search_support()  # Check if hybrid search is supported
+        #self._hybrid_search_enabled = self._check_hybrid_search_support()  # Check if hybrid search is supported
+        self._hybrid_search_enabled = False # 固定为false
 
     def _check_hybrid_search_support(self) -> bool:
         """
