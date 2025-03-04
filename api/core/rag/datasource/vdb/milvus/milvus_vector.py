@@ -40,10 +40,10 @@ class MilvusConfig(BaseModel):
         """
         if not values.get("uri"):
             raise ValueError("config MILVUS_URI is required")
-        if not values.get("user"):
-            raise ValueError("config MILVUS_USER is required")
-        if not values.get("password"):
-            raise ValueError("config MILVUS_PASSWORD is required")
+        # if not values.get("user"):
+        #     raise ValueError("config MILVUS_USER is required")
+        # if not values.get("password"):
+        #     raise ValueError("config MILVUS_PASSWORD is required")
         return values
 
     def to_milvus_params(self):
