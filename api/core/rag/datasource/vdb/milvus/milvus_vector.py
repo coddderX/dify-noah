@@ -66,11 +66,15 @@ class MilvusVector(BaseVector):
 
     def __init__(self, collection_name: str, config: MilvusConfig):
         super().__init__(collection_name)
+        logger.info("super init end")
         self._client_config = config
+        logger.info("init client start")
         self._client = self._init_client(config)
+        logger.info("init client end")
         self._consistency_level = "Session"  # Consistency level for Milvus operations
         self._fields: list[str] = []  # List of fields in the collection
         self._hybrid_search_enabled = self._check_hybrid_search_support()  # Check if hybrid search is supported
+        logger.info("_check_hybrid_search_support end")
 
     def _check_hybrid_search_support(self) -> bool:
         """
