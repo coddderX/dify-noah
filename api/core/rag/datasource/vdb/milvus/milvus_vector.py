@@ -369,7 +369,7 @@ class MilvusVectorFactory(AbstractVectorFactory):
             logging.error("error :", e)
             raise e
         logger.info("milvus vector config end ")
-        logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
+        logger.info("milvus vector config:%s", json.dumps(milvusConfig.to_milvus_params()))
         milvusVector = MilvusVector(
             collection_name=collection_name,
             config=milvusConfig,
