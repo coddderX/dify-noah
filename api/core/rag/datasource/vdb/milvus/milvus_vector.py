@@ -80,13 +80,13 @@ class MilvusVector(BaseVector):
         """
         if not self._client_config.enable_hybrid_search:
             return False
-
-        try:
-            milvus_version = self._client.get_server_version()
-            return version.parse(milvus_version).base_version >= version.parse("2.5.0").base_version
-        except Exception as e:
-            logger.warning(f"Failed to check Milvus version: {str(e)}. Disabling hybrid search.")
-            return False
+        return True
+        # try:
+        #     milvus_version = self._client.get_server_version()
+        #     return version.parse(milvus_version).base_version >= version.parse("2.5.0").base_version
+        # except Exception as e:
+        #     logger.warning(f"Failed to check Milvus version: {str(e)}. Disabling hybrid search.")
+        #     return False
 
     def get_type(self) -> str:
         """
@@ -364,10 +364,11 @@ class MilvusVectorFactory(AbstractVectorFactory):
             database=dify_config.MILVUS_DATABASE or "",
             enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
         )
+        logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
         milvusVector = MilvusVector(
             collection_name=collection_name,
             config=milvusConfig,
         )
+        logger.info("milvusVector init end")
 
-        logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
         return milvusVector
