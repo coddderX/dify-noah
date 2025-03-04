@@ -37,7 +37,7 @@ class HitTestingService:
                 },
                 "records": [],
             }
-
+        logging.info("retrieve start ")
         start = time.perf_counter()
 
         # get retrieval model , if the model is not setting , using default
@@ -65,10 +65,10 @@ class HitTestingService:
         dataset_query = DatasetQuery(
             dataset_id=dataset.id, content=query, source="hit_testing", created_by_role="account", created_by=account.id
         )
-
+        logging.info("data_query 记录构建完成")
         db.session.add(dataset_query)
         db.session.commit()
-
+        logging.info("data_query 插入数据库完成")
         return cls.compact_retrieve_response(query, all_documents)  # type: ignore
 
     @classmethod

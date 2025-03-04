@@ -1,9 +1,5 @@
 import logging
 
-from flask_login import current_user  # type: ignore
-from flask_restful import marshal, reqparse  # type: ignore
-from werkzeug.exceptions import Forbidden, InternalServerError, NotFound
-
 import services.dataset_service
 from controllers.console.app.error import (
     CompletionRequestError,
@@ -20,8 +16,11 @@ from core.errors.error import (
 )
 from core.model_runtime.errors.invoke import InvokeError
 from fields.hit_testing_fields import hit_testing_record_fields
+from flask_login import current_user  # type: ignore
+from flask_restful import marshal, reqparse  # type: ignore
 from services.dataset_service import DatasetService
 from services.hit_testing_service import HitTestingService
+from werkzeug.exceptions import Forbidden, InternalServerError, NotFound
 
 
 class DatasetsHitTestingBase:
@@ -54,6 +53,11 @@ class DatasetsHitTestingBase:
     @staticmethod
     def perform_hit_testing(dataset, args):
         try:
+            logging.debug("perform_hit_testing start")
+            try:
+                logging.debug("args: %s", args)
+            except Exception as e1:
+                logging.error("log error", e1)
             response = HitTestingService.retrieve(
                 dataset=dataset,
                 query=args["query"],

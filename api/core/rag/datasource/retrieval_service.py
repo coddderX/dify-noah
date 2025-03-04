@@ -15,6 +15,7 @@ from extensions.ext_database import db
 from models.dataset import ChildChunk, Dataset, DocumentSegment
 from models.dataset import Document as DatasetDocument
 from services.external_knowledge_service import ExternalDatasetService
+import logging
 
 default_retrieval_model = {
     "search_method": RetrievalMethod.SEMANTIC_SEARCH.value,
@@ -38,6 +39,7 @@ class RetrievalService:
         reranking_mode: str = "reranking_model",
         weights: Optional[dict] = None,
     ):
+        logging.info("retrieve service start ")
         if not query:
             return []
         dataset = db.session.query(Dataset).filter(Dataset.id == dataset_id).first()
@@ -50,7 +52,9 @@ class RetrievalService:
         threads: list[threading.Thread] = []
         exceptions: list[str] = []
         # retrieval_model source with keyword
+        logging.info("retrieve service start search ")
         if retrieval_method == "keyword_search":
+            logging.info("retrieve service start search  keyword")
             keyword_thread = threading.Thread(
                 target=RetrievalService.keyword_search,
                 kwargs={
@@ -66,6 +70,7 @@ class RetrievalService:
             keyword_thread.start()
         # retrieval_model source with semantic
         if RetrievalMethod.is_support_semantic_search(retrieval_method):
+            logging.info("retrieve service start search  semantic_search")
             embedding_thread = threading.Thread(
                 target=RetrievalService.embedding_search,
                 kwargs={
@@ -85,6 +90,7 @@ class RetrievalService:
 
         # retrieval source with full text
         if RetrievalMethod.is_support_fulltext_search(retrieval_method):
+            logging.info("retrieve service start search  fulltext_search")
             full_text_index_thread = threading.Thread(
                 target=RetrievalService.full_text_index_search,
                 kwargs={
@@ -104,12 +110,15 @@ class RetrievalService:
 
         for thread in threads:
             thread.join()
-
+        logging.info("retrieve service thread search end")
         if exceptions:
+            for e in exceptions:
+                logging.error("error",e)
             exception_message = ";\n".join(exceptions)
             raise ValueError(exception_message)
 
         if retrieval_method == RetrievalMethod.HYBRID_SEARCH.value:
+            logging.info("retrieve service start search  retrieval_method")
             data_post_processor = DataPostProcessor(
                 str(dataset.tenant_id), reranking_mode, reranking_model, weights, False
             )
@@ -119,7 +128,7 @@ class RetrievalService:
                 score_threshold=score_threshold,
                 top_n=top_k,
             )
-
+        logging.info("retrieve service HYBRID_SEARCH end")
         return all_documents
 
     @classmethod
