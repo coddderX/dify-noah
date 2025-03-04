@@ -3,8 +3,6 @@ import logging
 from typing import Any, Optional, cast
 
 import numpy as np
-from sqlalchemy.exc import IntegrityError
-
 from configs import dify_config
 from core.entities.embedding_type import EmbeddingInputType
 from core.model_manager import ModelInstance
@@ -15,6 +13,7 @@ from extensions.ext_database import db
 from extensions.ext_redis import redis_client
 from libs import helper
 from models.dataset import Embedding
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ class CacheEmbedding(Embeddings):
                     else 1
                 )
                 for i in range(0, len(embedding_queue_texts), max_chunks):
-                    batch_texts = embedding_queue_texts[i : i + max_chunks]
+                    batch_texts = embedding_queue_texts[i: i + max_chunks]
 
                     embedding_result = self._model_instance.invoke_text_embedding(
                         texts=batch_texts, user=self._user, input_type=EmbeddingInputType.DOCUMENT
@@ -103,19 +102,24 @@ class CacheEmbedding(Embeddings):
     def embed_query(self, text: str) -> list[float]:
         """Embed query text."""
         # use doc embedding cache or store if not exists
+        logger.info("embed_query start")
         hash = helper.generate_text_hash(text)
+        logger.info("generate_text_hash end")
         embedding_cache_key = f"{self._model_instance.provider}_{self._model_instance.model}_{hash}"
+        logger.info("redis cache key:%s", embedding_cache_key)
         embedding = redis_client.get(embedding_cache_key)
+        logger.info("redis_client.get  end, %s", embedding)
         if embedding:
             redis_client.expire(embedding_cache_key, 600)
             decoded_embedding = np.frombuffer(base64.b64decode(embedding), dtype="float")
             return [float(x) for x in decoded_embedding]
         try:
+            logger.info("invoke_text_embedding start ")
             embedding_result = self._model_instance.invoke_text_embedding(
                 texts=[text], user=self._user, input_type=EmbeddingInputType.QUERY
             )
-
             embedding_results = embedding_result.embeddings[0]
+            logger.info("invoke_text_embedding end, result:%s", embedding_results)
             # FIXME: type ignore for numpy here
             embedding_results = (embedding_results / np.linalg.norm(embedding_results)).tolist()  # type: ignore
             if np.isnan(embedding_results).any():
@@ -126,6 +130,7 @@ class CacheEmbedding(Embeddings):
             raise ex
 
         try:
+            logger.info("start np 转换embedding results")
             # encode embedding to base64
             embedding_vector = np.array(embedding_results)
             vector_bytes = embedding_vector.tobytes()
@@ -133,6 +138,7 @@ class CacheEmbedding(Embeddings):
             encoded_vector = base64.b64encode(vector_bytes)
             # Transform to string
             encoded_str = encoded_vector.decode("utf-8")
+            logger.info("end np 转换embedding results:%s", encoded_str)
             redis_client.setex(embedding_cache_key, 600, encoded_str)
         except Exception as ex:
             if dify_config.DEBUG:

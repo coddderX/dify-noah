@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
@@ -51,7 +52,7 @@ class Vector:
 
         if not vector_type:
             raise ValueError("Vector store must be specified.")
-
+        logging.info("vector_type:%s",vector_type)
         vector_factory_cls = self.get_vector_factory(vector_type)
         return vector_factory_cls().init_vector(self._dataset, self._attributes, self._embeddings)
 
@@ -174,6 +175,7 @@ class Vector:
 
     def search_by_vector(self, query: str, **kwargs: Any) -> list[Document]:
         query_vector = self._embeddings.embed_query(query)
+        logging.info("query to embedding end:%s",query_vector)
         return self._vector_processor.search_by_vector(query_vector, **kwargs)
 
     def search_by_full_text(self, query: str, **kwargs: Any) -> list[Document]:
@@ -195,6 +197,7 @@ class Vector:
             model_type=ModelType.TEXT_EMBEDDING,
             model=self._dataset.embedding_model,
         )
+        logging.info("get embeddings end")
         return CacheEmbedding(embedding_model)
 
     def _filter_duplicate_texts(self, texts: list[Document]) -> list[Document]:

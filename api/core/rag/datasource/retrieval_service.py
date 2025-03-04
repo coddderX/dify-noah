@@ -171,14 +171,16 @@ class RetrievalService:
         retrieval_method: str,
         exceptions: list,
     ):
+        logging.info("embedding_search start")
         with flask_app.app_context():
             try:
+                logging.info("start db ")
                 dataset = db.session.query(Dataset).filter(Dataset.id == dataset_id).first()
                 if not dataset:
                     raise ValueError("dataset not found")
 
                 vector = Vector(dataset=dataset)
-
+                logging.info("search_by_vector start")
                 documents = vector.search_by_vector(
                     cls.escape_query_for_search(query),
                     search_type="similarity_score_threshold",
@@ -186,7 +188,7 @@ class RetrievalService:
                     score_threshold=score_threshold,
                     filter={"group_id": [dataset.id]},
                 )
-
+                logging.info("search_by_vector end")
                 if documents:
                     if (
                         reranking_model
@@ -205,7 +207,9 @@ class RetrievalService:
                                 top_n=len(documents),
                             )
                         )
+                        logging.info("rerank data post  end")
                     else:
+                        logging.info("embedding_search get documents  end")
                         all_documents.extend(documents)
             except Exception as e:
                 exceptions.append(str(e))

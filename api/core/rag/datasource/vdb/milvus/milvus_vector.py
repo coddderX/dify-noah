@@ -2,11 +2,6 @@ import json
 import logging
 from typing import Any, Optional
 
-from packaging import version
-from pydantic import BaseModel, model_validator
-from pymilvus import MilvusClient, MilvusException  # type: ignore
-from pymilvus.milvus_client import IndexParams  # type: ignore
-
 from configs import dify_config
 from core.rag.datasource.vdb.field import Field
 from core.rag.datasource.vdb.vector_base import BaseVector
@@ -16,6 +11,10 @@ from core.rag.embedding.embedding_base import Embeddings
 from core.rag.models.document import Document
 from extensions.ext_redis import redis_client
 from models.dataset import Dataset
+from packaging import version
+from pydantic import BaseModel, model_validator
+from pymilvus import MilvusClient, MilvusException  # type: ignore
+from pymilvus.milvus_client import IndexParams  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +123,7 @@ class MilvusVector(BaseVector):
 
         for i in range(0, total_count, 1000):
             # Insert into the collection.
-            batch_insert_list = insert_dict_list[i : i + 1000]
+            batch_insert_list = insert_dict_list[i: i + 1000]
             try:
                 ids = self._client.insert(collection_name=self._collection_name, data=batch_insert_list)
                 pks.extend(ids)
@@ -193,7 +192,7 @@ class MilvusVector(BaseVector):
         return field in self._fields
 
     def _process_search_results(
-        self, results: list[Any], output_fields: list[str], score_threshold: float = 0.0
+            self, results: list[Any], output_fields: list[str], score_threshold: float = 0.0
     ) -> list[Document]:
         """
         Common method to process search results
@@ -203,6 +202,7 @@ class MilvusVector(BaseVector):
         :param score_threshold: Score threshold for filtering
         :return: List of documents
         """
+        logger.info("start _process_search_results")
         docs = []
         for result in results[0]:
             metadata = result["entity"].get(output_fields[1], {})
@@ -211,13 +211,14 @@ class MilvusVector(BaseVector):
             if result["distance"] > score_threshold:
                 doc = Document(page_content=result["entity"].get(output_fields[0], ""), metadata=metadata)
                 docs.append(doc)
-
+        logger.info("end _process_search_results")
         return docs
 
     def search_by_vector(self, query_vector: list[float], **kwargs: Any) -> list[Document]:
         """
         Search for documents by vector similarity.
         """
+        logger.info("start search_by_vector")
         results = self._client.search(
             collection_name=self._collection_name,
             data=[query_vector],
@@ -225,7 +226,7 @@ class MilvusVector(BaseVector):
             limit=kwargs.get("top_k", 4),
             output_fields=[Field.CONTENT_KEY.value, Field.METADATA_KEY.value],
         )
-
+        logger.info("end search_by_vector")
         return self._process_search_results(
             results,
             output_fields=[Field.CONTENT_KEY.value, Field.METADATA_KEY.value],
@@ -255,7 +256,7 @@ class MilvusVector(BaseVector):
         )
 
     def create_collection(
-        self, embeddings: list, metadatas: Optional[list[dict]] = None, index_params: Optional[dict] = None
+            self, embeddings: list, metadatas: Optional[list[dict]] = None, index_params: Optional[dict] = None
     ):
         """
         Create a new collection in Milvus with the specified schema and index parameters.
@@ -354,15 +355,18 @@ class MilvusVectorFactory(AbstractVectorFactory):
             dataset_id = dataset.id
             collection_name = Dataset.gen_collection_name_by_id(dataset_id)
             dataset.index_struct = json.dumps(self.gen_index_struct_dict(VectorType.MILVUS, collection_name))
-
-        return MilvusVector(
-            collection_name=collection_name,
-            config=MilvusConfig(
-                uri=dify_config.MILVUS_URI or "",
-                token=dify_config.MILVUS_TOKEN or "",
-                user=dify_config.MILVUS_USER or "",
-                password=dify_config.MILVUS_PASSWORD or "",
-                database=dify_config.MILVUS_DATABASE or "",
-                enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
-            ),
+        logger.info("collection_name:%s", collection_name)
+        milvusConfig = MilvusConfig(
+            uri=dify_config.MILVUS_URI or "",
+            token=dify_config.MILVUS_TOKEN or "",
+            user=dify_config.MILVUS_USER or "",
+            password=dify_config.MILVUS_PASSWORD or "",
+            database=dify_config.MILVUS_DATABASE or "",
+            enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
         )
+        milvusVector = MilvusVector(
+            collection_name=collection_name,
+            config=milvusConfig,
+        )
+
+        logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
