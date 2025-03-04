@@ -4,7 +4,7 @@ FROM ncr.nie.netease.com/mirror_docker.io/library/python:3.12-slim-bookworm AS b
 WORKDIR /app/api
 
 # Install Poetry
-ENV POETRY_VERSION=2.0.1
+ENV POETRY_VERSION=1.8.4
 
 # if you located in China, you can use aliyun mirror to speed up
 RUN pip install --no-cache-dir poetry==${POETRY_VERSION} -i https://mirrors.aliyun.com/pypi/simple/
