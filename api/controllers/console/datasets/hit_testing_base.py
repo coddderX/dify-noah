@@ -57,7 +57,7 @@ class DatasetsHitTestingBase:
             try:
                 logging.debug("args: %s", args)
             except Exception as e1:
-                logging.error("log error", e1)
+                logging.error("log error %s", e1)
             response = HitTestingService.retrieve(
                 dataset=dataset,
                 query=args["query"],

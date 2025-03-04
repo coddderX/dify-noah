@@ -355,6 +355,12 @@ class MilvusVectorFactory(AbstractVectorFactory):
             collection_name = Dataset.gen_collection_name_by_id(dataset_id)
             dataset.index_struct = json.dumps(self.gen_index_struct_dict(VectorType.MILVUS, collection_name))
         logger.info("collection_name:%s", collection_name)
+        logger.info("MILVUS_URI:%s", dify_config.MILVUS_URI)
+        logger.info("MILVUS_TOKEN:%s", dify_config.MILVUS_TOKEN)
+        logger.info("MILVUS_USER:%s", dify_config.MILVUS_USER)
+        logger.info("MILVUS_PASSWORD:%s", dify_config.MILVUS_PASSWORD)
+        logger.info("MILVUS_DATABASE:%s", dify_config.MILVUS_DATABASE)
+        logger.info("MILVUS_ENABLE_HYBRID_SEARCH:%s", str(dify_config.MILVUS_ENABLE_HYBRID_SEARCH))
         try:
 
             milvusConfig = MilvusConfig(
@@ -366,8 +372,9 @@ class MilvusVectorFactory(AbstractVectorFactory):
                 enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
             )
         except BaseException as e:
-            logging.error("error %s", e)
+            print(f"强制输出异常: {e}")  #
             raise e
+        print("milvus vector config end")  #
         logger.info("milvus vector config end ")
         logger.info("milvus vector config:%s", json.dumps(milvusConfig.to_milvus_params()))
         milvusVector = MilvusVector(

@@ -113,7 +113,7 @@ class RetrievalService:
         logging.info("retrieve service thread search end")
         if exceptions:
             for e in exceptions:
-                logging.error("error",e)
+                logging.error("error %s",e)
             exception_message = ";\n".join(exceptions)
             raise ValueError(exception_message)
 
@@ -212,7 +212,7 @@ class RetrievalService:
                         logging.info("embedding_search get documents  end")
                         all_documents.extend(documents)
             except Exception as e:
-                logging.error("error handle ",e)
+                logging.error("error handle %s ",e)
                 exceptions.append(str(e))
 
     @classmethod
