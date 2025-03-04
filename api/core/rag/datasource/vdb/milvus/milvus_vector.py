@@ -11,7 +11,6 @@ from core.rag.embedding.embedding_base import Embeddings
 from core.rag.models.document import Document
 from extensions.ext_redis import redis_client
 from models.dataset import Dataset
-from packaging import version
 from pydantic import BaseModel, model_validator
 from pymilvus import MilvusClient, MilvusException  # type: ignore
 from pymilvus.milvus_client import IndexParams  # type: ignore
@@ -356,14 +355,20 @@ class MilvusVectorFactory(AbstractVectorFactory):
             collection_name = Dataset.gen_collection_name_by_id(dataset_id)
             dataset.index_struct = json.dumps(self.gen_index_struct_dict(VectorType.MILVUS, collection_name))
         logger.info("collection_name:%s", collection_name)
-        milvusConfig = MilvusConfig(
-            uri=dify_config.MILVUS_URI or "",
-            token=dify_config.MILVUS_TOKEN or "",
-            user=dify_config.MILVUS_USER or "",
-            password=dify_config.MILVUS_PASSWORD or "",
-            database=dify_config.MILVUS_DATABASE or "",
-            enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
-        )
+        try:
+
+            milvusConfig = MilvusConfig(
+                uri=dify_config.MILVUS_URI or "",
+                token=dify_config.MILVUS_TOKEN or "",
+                user=dify_config.MILVUS_USER or "",
+                password=dify_config.MILVUS_PASSWORD or "",
+                database=dify_config.MILVUS_DATABASE or "",
+                enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
+            )
+        except Exception as e:
+            logging.error("error :", e)
+            raise e
+        logger.info("milvus vector config end ")
         logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
         milvusVector = MilvusVector(
             collection_name=collection_name,
