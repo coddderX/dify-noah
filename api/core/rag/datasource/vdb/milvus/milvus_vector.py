@@ -370,3 +370,4 @@ class MilvusVectorFactory(AbstractVectorFactory):
         )
 
         logger.info("milvus vector config:%s", milvusConfig.to_milvus_params())
+        return milvusVector

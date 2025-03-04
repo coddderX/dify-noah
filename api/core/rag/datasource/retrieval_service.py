@@ -212,6 +212,7 @@ class RetrievalService:
                         logging.info("embedding_search get documents  end")
                         all_documents.extend(documents)
             except Exception as e:
+                logging.error("error handle ",e)
                 exceptions.append(str(e))
 
     @classmethod
