@@ -365,8 +365,8 @@ class MilvusVectorFactory(AbstractVectorFactory):
                 database=dify_config.MILVUS_DATABASE or "",
                 enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
             )
-        except Exception as e:
-            logging.error("error :", e)
+        except BaseException as e:
+            logging.error("error %s", e)
             raise e
         logger.info("milvus vector config end ")
         logger.info("milvus vector config:%s", json.dumps(milvusConfig.to_milvus_params()))
