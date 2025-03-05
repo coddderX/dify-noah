@@ -1,5 +1,5 @@
 # base image
-FROM node:20-alpine3.20 AS base
+FROM ncr.nie.netease.com/mirror_docker.io/library/node:20-alpine3.20 AS base
 LABEL maintainer="takatost@gmail.com"
 
 # if you located in China, you can use aliyun mirror to speed up
@@ -17,9 +17,9 @@ COPY package.json .
 COPY yarn.lock .
 
 # if you located in China, you can use taobao registry to speed up
-# RUN yarn install --frozen-lockfile --registry https://registry.npmmirror.com/
+RUN yarn install --frozen-lockfile --registry https://registry.npmmirror.com/
 
-RUN yarn install --frozen-lockfile
+#RUN yarn install --frozen-lockfile
 
 # build resources
 FROM base AS builder
