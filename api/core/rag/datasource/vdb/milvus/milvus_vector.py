@@ -2,6 +2,11 @@ import json
 import logging
 from typing import Any, Optional
 
+from packaging import version
+from pydantic import BaseModel, model_validator
+from pymilvus import MilvusClient, MilvusException  # type: ignore
+from pymilvus.milvus_client import IndexParams  # type: ignore
+
 from configs import dify_config
 from core.rag.datasource.vdb.field import Field
 from core.rag.datasource.vdb.vector_base import BaseVector
@@ -11,9 +16,6 @@ from core.rag.embedding.embedding_base import Embeddings
 from core.rag.models.document import Document
 from extensions.ext_redis import redis_client
 from models.dataset import Dataset
-from pydantic import BaseModel, model_validator
-from pymilvus import MilvusClient, MilvusException  # type: ignore
-from pymilvus.milvus_client import IndexParams  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -83,13 +85,13 @@ class MilvusVector(BaseVector):
         """
         if not self._client_config.enable_hybrid_search:
             return False
-        return True
-        # try:
-        #     milvus_version = self._client.get_server_version()
-        #     return version.parse(milvus_version).base_version >= version.parse("2.5.0").base_version
-        # except Exception as e:
-        #     logger.warning(f"Failed to check Milvus version: {str(e)}. Disabling hybrid search.")
-        #     return False
+
+        try:
+            milvus_version = self._client.get_server_version()
+            return version.parse(milvus_version).base_version >= version.parse("2.5.0").base_version
+        except Exception as e:
+            logger.warning(f"Failed to check Milvus version: {str(e)}. Disabling hybrid search.")
+            return False
 
     def get_type(self) -> str:
         """
@@ -358,33 +360,15 @@ class MilvusVectorFactory(AbstractVectorFactory):
             dataset_id = dataset.id
             collection_name = Dataset.gen_collection_name_by_id(dataset_id)
             dataset.index_struct = json.dumps(self.gen_index_struct_dict(VectorType.MILVUS, collection_name))
-        logger.info("collection_name:%s", collection_name)
-        logger.info("MILVUS_URI:%s", dify_config.MILVUS_URI)
-        logger.info("MILVUS_TOKEN:%s", dify_config.MILVUS_TOKEN)
-        logger.info("MILVUS_USER:%s", dify_config.MILVUS_USER)
-        logger.info("MILVUS_PASSWORD:%s", dify_config.MILVUS_PASSWORD)
-        logger.info("MILVUS_DATABASE:%s", dify_config.MILVUS_DATABASE)
-        logger.info("MILVUS_ENABLE_HYBRID_SEARCH:%s", str(dify_config.MILVUS_ENABLE_HYBRID_SEARCH))
-        try:
 
-            milvusConfig = MilvusConfig(
+        return MilvusVector(
+            collection_name=collection_name,
+            config=MilvusConfig(
                 uri=dify_config.MILVUS_URI or "",
                 token=dify_config.MILVUS_TOKEN or "",
                 user=dify_config.MILVUS_USER or "",
                 password=dify_config.MILVUS_PASSWORD or "",
                 database=dify_config.MILVUS_DATABASE or "",
                 enable_hybrid_search=dify_config.MILVUS_ENABLE_HYBRID_SEARCH or False,
-            )
-        except BaseException as e:
-            print(f"强制输出异常: {e}")  #
-            raise e
-        print("milvus vector config end")  #
-        logger.info("milvus vector config end ")
-        logger.info("milvus vector config:%s", json.dumps(milvusConfig.to_milvus_params()))
-        milvusVector = MilvusVector(
-            collection_name=collection_name,
-            config=milvusConfig,
+            ),
         )
-        logger.info("milvusVector init end")
-
-        return milvusVector
