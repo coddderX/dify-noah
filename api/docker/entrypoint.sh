@@ -34,6 +34,7 @@ else
       --workers ${SERVER_WORKER_AMOUNT:-1} \
       --worker-class ${SERVER_WORKER_CLASS:-gevent} \
       --worker-connections ${SERVER_WORKER_CONNECTIONS:-10} \
+      --threads ${SERVER_WORKER_THREADS:-4} \
       --timeout ${GUNICORN_TIMEOUT:-200} \
       app:app
   fi
