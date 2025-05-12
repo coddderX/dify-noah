@@ -133,7 +133,7 @@ class AllAppListApi(Resource):
         # get app list
         app_service = AppService()
 
-        app_pagination = app_service.get_all_paginate_apps(None, None, args)
+        app_pagination = app_service.get_all_paginate_apps( args)
         if not app_pagination:
             return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
 
