@@ -18,7 +18,7 @@ from core.tools.tool_manager import ToolManager
 from core.tools.utils.configuration import ToolParameterConfigurationManager
 from events.app_event import app_was_created
 from extensions.ext_database import db
-from models.account import Account
+from models.account import Account,Tenant
 from models.model import App, AppMode, AppModelConfig
 from models.tools import ApiToolProvider
 from services.tag_service import TagService
@@ -26,6 +26,46 @@ from tasks.remove_app_and_related_data_task import remove_app_and_related_data_t
 
 
 class AppService:
+    def get_all_paginate_apps(self,  args: dict) -> Pagination | None:
+        """
+        Get app list with pagination
+        :param user_id: user id
+        :param tenant_id: tenant id
+        :param args: request args
+        :return:
+        """
+        tenant_id = None
+        if args["gameId"] is not None:
+            # 根据空间名称查询tenant_id
+            name = args["gameId"]+"_us"
+            tenant = Tenant.query.filter(Tenant.name == name).first()
+            if tenant is not None:
+                tenant_id =tenant.id
+
+        filters = [App.is_universal == False]
+        if tenant_id is not None:
+            filters = [App.tenant_id == tenant_id]
+
+        # if args["mode"] == "workflow":
+        #     filters.append(App.mode.in_([AppMode.WORKFLOW.value, AppMode.COMPLETION.value]))
+        # elif args["mode"] == "chat":
+        #     filters.append(App.mode.in_([AppMode.CHAT.value, AppMode.ADVANCED_CHAT.value]))
+        # elif args["mode"] == "agent-chat":
+        #     filters.append(App.mode == AppMode.AGENT_CHAT.value)
+        # elif args["mode"] == "channel":
+        #     filters.append(App.mode == AppMode.CHANNEL.value)
+
+
+        app_models = db.paginate(
+            db.select(App).where(*filters).order_by(App.created_at.desc()),
+            page=args["page"],
+            per_page=args["limit"],
+            error_out=False,
+        )
+
+        return app_models
+
+
     def get_paginate_apps(self, user_id: str, tenant_id: str, args: dict) -> Pagination | None:
         """
         Get app list with pagination

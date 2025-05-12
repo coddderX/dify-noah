@@ -98,6 +98,48 @@ class AppListApi(Resource):
         return app, 201
 
 
+class AllAppListApi(Resource):
+    # @setup_required
+    # @login_required
+    # @account_initialization_required
+    # @enterprise_license_required
+    def get(self):
+        """Get app list"""
+
+        def uuid_list(value):
+            try:
+                return [str(uuid.UUID(v)) for v in value.split(",")]
+            except ValueError:
+                abort(400, message="Invalid UUID format in tag_ids.")
+
+        parser = reqparse.RequestParser()
+        parser.add_argument("page", type=inputs.int_range(1, 99999), required=False, default=1, location="args")
+        parser.add_argument("limit", type=inputs.int_range(1, 100), required=False, default=20, location="args")
+        parser.add_argument(
+            "mode",
+            type=str,
+            choices=["chat", "workflow", "agent-chat", "channel", "all"],
+            default="all",
+            location="args",
+            required=False,
+        )
+        parser.add_argument("name", type=str, location="args", required=False)
+        parser.add_argument("tag_ids", type=uuid_list, location="args", required=False)
+        parser.add_argument("is_created_by_me", type=inputs.boolean, location="args", required=False)
+        parser.add_argument("gameId", type=str, location="args", required=False)
+
+        args = parser.parse_args()
+
+        # get app list
+        app_service = AppService()
+
+        app_pagination = app_service.get_all_paginate_apps(None, None, args)
+        if not app_pagination:
+            return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
+
+        return marshal(app_pagination, app_pagination_fields)
+
+
 class AppApi(Resource):
     @setup_required
     @login_required
@@ -333,6 +375,7 @@ class AppTraceApi(Resource):
 
 
 api.add_resource(AppListApi, "/apps")
+api.add_resource(AllAppListApi, "/allApps")
 api.add_resource(AppApi, "/apps/<uuid:app_id>")
 api.add_resource(AppCopyApi, "/apps/<uuid:app_id>/copy")
 api.add_resource(AppExportApi, "/apps/<uuid:app_id>/export")
