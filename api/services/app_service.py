@@ -91,7 +91,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
         total_count_first_row = total_count_result.fetchone()
         total = total_count_first_row[0]
 
-        sql_result = db.session.execute(text(sql), {}).mappings()
+        sql_result = db.session.execute(text(sql), {})
         rows = sql_result.fetchall()
         if rows is None:
             return {"items": [], "total": total}
