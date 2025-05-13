@@ -54,7 +54,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
 
 """
         sql = f"""
-        select t1.id,t1.name,t1.mode,t3.name as tenantName,t2.name as userName,t1.created_at as createTime
+        select t1.id,t1.name,t1.mode,t3.name as tenant_name,t2.name as user_name,t1.created_at as create_time
 from public.apps t1
 left join public.accounts t2
 on t1.created_by = t2.id
@@ -98,8 +98,8 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
 
         items = []
         for row in rows:
-            items.append({"id": row["id"], "name": row["name"], "mode": row["mode"], "tenantName": row["tenantName"],
-                          "userName": row["userName"], "createTime": row["createTime"]})
+            items.append({"id": row[0], "name": row[1], "mode": row[2], "tenantName": row[3],
+                          "userName": row[4], "createTime": row[5]})
         return {"items": [], "total": total}
 
     def get_paginate_apps(self, user_id: str, tenant_id: str, args: dict) -> Pagination | None:
