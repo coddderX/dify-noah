@@ -112,7 +112,7 @@ class AllAppListApi(Resource):
                 abort(400, message="Invalid UUID format in tag_ids.")
 
         parser = reqparse.RequestParser()
-        parser.add_argument("offset", type=inputs.int_range(1, 99999), required=False, default=0, location="args")
+        parser.add_argument("offset", type=inputs.int_range(0, 99999), required=False, default=0, location="args")
         parser.add_argument("pageSize", type=inputs.int_range(1, 10000000), required=False, default=10, location="args")
         parser.add_argument("searchKey", type=str, location="args", required=False)
         parser.add_argument("orderDirect", type=str, location="args", required=False)
