@@ -1,12 +1,6 @@
 import uuid
 from typing import cast
 
-from flask_login import current_user  # type: ignore
-from flask_restful import Resource, inputs, marshal, marshal_with, reqparse  # type: ignore
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-from werkzeug.exceptions import BadRequest, Forbidden, abort
-
 from controllers.console import api
 from controllers.console.app.wraps import get_app_model
 from controllers.console.wraps import (
@@ -22,10 +16,15 @@ from fields.app_fields import (
     app_detail_fields_with_site,
     app_pagination_fields,
 )
+from flask_login import current_user  # type: ignore
+from flask_restful import Resource, inputs, marshal, marshal_with, reqparse  # type: ignore
 from libs.login import login_required
 from models import Account, App
 from services.app_dsl_service import AppDslService, ImportMode
 from services.app_service import AppService
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from werkzeug.exceptions import BadRequest, Forbidden, abort
 
 ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
 
@@ -113,31 +112,17 @@ class AllAppListApi(Resource):
                 abort(400, message="Invalid UUID format in tag_ids.")
 
         parser = reqparse.RequestParser()
-        parser.add_argument("page", type=inputs.int_range(1, 99999), required=False, default=1, location="args")
-        parser.add_argument("limit", type=inputs.int_range(1, 10000000), required=False, default=20, location="args")
-        parser.add_argument(
-            "mode",
-            type=str,
-            choices=["chat", "workflow", "agent-chat", "channel", "all"],
-            default="all",
-            location="args",
-            required=False,
-        )
-        parser.add_argument("name", type=str, location="args", required=False)
-        parser.add_argument("tag_ids", type=uuid_list, location="args", required=False)
-        parser.add_argument("is_created_by_me", type=inputs.boolean, location="args", required=False)
+        parser.add_argument("offset", type=inputs.int_range(1, 99999), required=False, default=0, location="args")
+        parser.add_argument("pageSize", type=inputs.int_range(1, 10000000), required=False, default=10, location="args")
+        parser.add_argument("searchKey", type=str, location="args", required=False)
+        parser.add_argument("orderDirect", type=str, location="args", required=False)
         parser.add_argument("gameId", type=str, location="args", required=False)
-
         args = parser.parse_args()
 
         # get app list
         app_service = AppService()
 
-        app_pagination = app_service.get_all_paginate_apps( args)
-        if not app_pagination:
-            return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
-
-        return marshal(app_pagination, app_pagination_fields)
+        return app_service.get_all_paginate_apps(args)
 
 
 class AppApi(Resource):

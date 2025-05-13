@@ -3,9 +3,6 @@ import logging
 from datetime import UTC, datetime
 from typing import Optional, cast
 
-from flask_login import current_user  # type: ignore
-from flask_sqlalchemy.pagination import Pagination
-
 from configs import dify_config
 from constants.model_template import default_app_templates
 from core.agent.entities import AgentToolEntity
@@ -18,15 +15,18 @@ from core.tools.tool_manager import ToolManager
 from core.tools.utils.configuration import ToolParameterConfigurationManager
 from events.app_event import app_was_created
 from extensions.ext_database import db
-from models.account import Account,Tenant
+from flask_login import current_user  # type: ignore
+from flask_sqlalchemy.pagination import Pagination
+from models.account import Account, Tenant
 from models.model import App, AppMode, AppModelConfig
 from models.tools import ApiToolProvider
 from services.tag_service import TagService
+from sqlalchemy import text
 from tasks.remove_app_and_related_data_task import remove_app_and_related_data_task
 
 
 class AppService:
-    def get_all_paginate_apps(self,  args: dict) -> Pagination | None:
+    def get_all_paginate_apps(self, args: dict) -> dict:
         """
         Get app list with pagination
         :param user_id: user id
@@ -34,37 +34,73 @@ class AppService:
         :param args: request args
         :return:
         """
+        print("args:\n")
+        print(args)
+        #  增加名称关键词过滤
+        #  支持创建时间排序， 也支持的
+        #  查询结果将user_id -> user_name
+        #  空间名 -> game_id，有问题，官方的可以，但是私人的不行。
+        searchKey = ""
+        if "searchKey" in args and args["searchKey"] is not None:
+            searchKey = args["searchKey"]
+        count_sql = f"""
+            select count(*) as total
+from public.apps t1
+left join public.accounts t2
+on t1.created_by = t2.id
+left join public.tenants t3
+on t1.tenant_id =t3.id
+where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
+
+"""
+        sql = f"""
+        select t1.id,t1.name,t1.mode,t3.name as tenantName,t2.name as userName,t1.created_at as createTime
+from public.apps t1
+left join public.accounts t2
+on t1.created_by = t2.id
+left join public.tenants t3
+on t1.tenant_id =t3.id
+where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
+
+"""
         tenant_id = None
         if args["gameId"] is not None:
             # 根据空间名称查询tenant_id
-            name = args["gameId"]+"_us"
+            name = args["gameId"] + "_us"
             tenant = Tenant.query.filter(Tenant.name == name).first()
             if tenant is not None:
-                tenant_id =tenant.id
+                tenant_id = tenant.id
 
-        filters = [App.is_universal == False]
         if tenant_id is not None:
-            filters = [App.tenant_id == tenant_id]
+            sql = sql + f" and t1.tenant_id={tenant_id} "
+            count_sql = count_sql + f" and t1.tenant_id={tenant_id} "
 
-        # if args["mode"] == "workflow":
-        #     filters.append(App.mode.in_([AppMode.WORKFLOW.value, AppMode.COMPLETION.value]))
-        # elif args["mode"] == "chat":
-        #     filters.append(App.mode.in_([AppMode.CHAT.value, AppMode.ADVANCED_CHAT.value]))
-        # elif args["mode"] == "agent-chat":
-        #     filters.append(App.mode == AppMode.AGENT_CHAT.value)
-        # elif args["mode"] == "channel":
-        #     filters.append(App.mode == AppMode.CHANNEL.value)
+        orderDirect = "asc"
+        if "orderDirect" in args and args["orderDirect"] is not None:
+            orderDirect = args["orderDirect"]
+        sql = sql + f" order by t1.created_at {orderDirect}"
+        pageSize = 10
+        offset = 0
+        if "pageSize" in args and args["pageSize"] is not None:
+            pageSize = args["pageSize"]
+        if "offset" in args and args["offset"] is not None:
+            offset = args["offset"]
+        sql = sql + f" LIMIT f{pageSize} OFFSET {offset} "
 
+        total_count_result = db.session.execute(text(count_sql), {})
+        total_count_first_row = total_count_result.fetchone()
+        total = total_count_first_row["total"]
 
-        app_models = db.paginate(
-            db.select(App).where(*filters).order_by(App.created_at.desc()),
-            page=args["page"],
-            per_page=args["limit"],
-            error_out=False,
-        )
+        sql_result = db.session.execute(text(sql), {})
+        rows = sql_result.fetchall()
+        if rows is None:
+            return {"items": [], "total": total}
 
-        return app_models
-
+        items = []
+        for row in rows:
+            items.append({"id": row["id"], "name": row["name"], "mode": row["mode"], "tenantName": row["tenantName"],
+                          "userName": row["userName"], "createTime": row["createTime"]})
+        return {"items": [], "total": total}
 
     def get_paginate_apps(self, user_id: str, tenant_id: str, args: dict) -> Pagination | None:
         """
@@ -136,8 +172,8 @@ class AppService:
 
             if model_instance:
                 if (
-                    model_instance.model == default_model_config["model"]["name"]
-                    and model_instance.provider == default_model_config["model"]["provider"]
+                        model_instance.model == default_model_config["model"]["name"]
+                        and model_instance.provider == default_model_config["model"]["provider"]
                 ):
                     default_model_dict = default_model_config["model"]
                 else:
