@@ -100,7 +100,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
         for row in rows:
             items.append({"id": row[0], "name": row[1], "mode": row[2], "tenantName": row[3],
                           "userName": row[4], "createTime": row[5]})
-        return {"items": [], "total": total}
+        return {"items": items, "total": total}
 
     def get_paginate_apps(self, user_id: str, tenant_id: str, args: dict) -> Pagination | None:
         """
