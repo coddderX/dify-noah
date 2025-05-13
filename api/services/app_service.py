@@ -85,7 +85,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
             pageSize = args["pageSize"]
         if "offset" in args and args["offset"] is not None:
             offset = args["offset"]
-        sql = sql + f" LIMIT f{pageSize} OFFSET {offset} "
+        sql = sql + f" LIMIT {pageSize} OFFSET {offset} "
 
         total_count_result = db.session.execute(text(count_sql), {})
         total_count_first_row = total_count_result.fetchone()
