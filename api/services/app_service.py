@@ -70,7 +70,8 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
             tenant = Tenant.query.filter(Tenant.name == name).first()
             if tenant is not None:
                 tenant_id = tenant.id
-
+            else:
+                return {"items": [], "total": 0}
         if tenant_id is not None:
             sql = sql + f" and t1.tenant_id='{tenant_id}' "
             count_sql = count_sql + f" and t1.tenant_id='{tenant_id}' "
