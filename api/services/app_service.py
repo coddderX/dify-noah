@@ -72,8 +72,8 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
                 tenant_id = tenant.id
 
         if tenant_id is not None:
-            sql = sql + f" and t1.tenant_id={tenant_id} "
-            count_sql = count_sql + f" and t1.tenant_id={tenant_id} "
+            sql = sql + f" and t1.tenant_id='{tenant_id}' "
+            count_sql = count_sql + f" and t1.tenant_id='{tenant_id}' "
 
         orderDirect = "asc"
         if "orderDirect" in args and args["orderDirect"] is not None:
