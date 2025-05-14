@@ -64,7 +64,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
 
 """
         tenant_id = None
-        if args["gameId"] is not None:
+        if args["gameId"] is not None and args["gameId"] != "":
             # 根据空间名称查询tenant_id
             name = args["gameId"] + "_us"
             tenant = Tenant.query.filter(Tenant.name == name).first()
