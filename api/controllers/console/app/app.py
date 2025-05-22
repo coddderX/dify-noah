@@ -105,11 +105,11 @@ class AllAppListApi(Resource):
     def get(self):
         """Get app list"""
 
-        def uuid_list(value):
+        def username_list(value):
             try:
-                return [str(uuid.UUID(v)) for v in value.split(",")]
+                return [str(v) for v in value.split(",")]
             except ValueError:
-                abort(400, message="Invalid UUID format in tag_ids.")
+                abort(400, message="Invalid userName format in userNames.")
 
         parser = reqparse.RequestParser()
         parser.add_argument("offset", type=inputs.int_range(0, 99999), required=False, default=0, location="args")
@@ -117,12 +117,31 @@ class AllAppListApi(Resource):
         parser.add_argument("searchKey", type=str, location="args", required=False)
         parser.add_argument("orderDirect", type=str, location="args", required=False)
         parser.add_argument("gameId", type=str, location="args", required=False)
+        parser.add_argument("userNames", type=username_list, location="args", required=False)
         args = parser.parse_args()
 
         # get app list
         app_service = AppService()
 
         return app_service.get_all_paginate_apps(args)
+
+
+class AllCreatorsListApi(Resource):
+    # @setup_required
+    # @login_required
+    # @account_initialization_required
+    # @enterprise_license_required
+    def get(self):
+        """Get app list"""
+
+        parser = reqparse.RequestParser()
+        parser.add_argument("gameId", type=str, location="args", required=False)
+        args = parser.parse_args()
+
+        # get app list
+        app_service = AppService()
+
+        return app_service.get_all_user_names(args)
 
 
 class AppApi(Resource):
@@ -361,6 +380,7 @@ class AppTraceApi(Resource):
 
 api.add_resource(AppListApi, "/apps")
 api.add_resource(AllAppListApi, "/allApps")
+api.add_resource(AllCreatorsListApi, "/getAllCreators")
 api.add_resource(AppApi, "/apps/<uuid:app_id>")
 api.add_resource(AppCopyApi, "/apps/<uuid:app_id>/copy")
 api.add_resource(AppExportApi, "/apps/<uuid:app_id>/export")

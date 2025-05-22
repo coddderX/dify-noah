@@ -26,6 +26,48 @@ from tasks.remove_app_and_related_data_task import remove_app_and_related_data_t
 
 
 class AppService:
+
+    def get_all_user_names(self,args):
+        if 'gameId' in args and args['gameId'] is not None and args['gameId'] !='':
+            tenant_name = args['gameId']+"_us"
+            sql = f"""
+            SELECT t3.name FROM public.tenant_account_joins t1
+left join public.tenants t2
+on t1.tenant_id = t2.id
+left join public.accounts t3
+on t1.account_id = t3.id
+where t2.name='{tenant_name}'
+"""
+        else:
+            sql = """
+                    select name
+            from  public.accounts 
+            """
+        sql_result = db.session.execute(text(sql), {})
+        rows = sql_result.fetchall()
+        user_names = []
+        if rows is None:
+            return user_names
+
+        for row in rows:
+            user_names.append(str(row[0]))
+        return user_names
+
+    # def get_all_workplace(self):
+    #     sql = """
+    #             select name
+    #     from  public.tenants
+    #     """
+    #     sql_result = db.session.execute(text(sql), {})
+    #     rows = sql_result.fetchall()
+    #     tenant_names = []
+    #     if rows is None:
+    #         return tenant_names
+    #
+    #     for row in rows:
+    #         tenant_names.append(str(row[0]))
+    #     return tenant_names
+
     def get_all_paginate_apps(self, args: dict) -> dict:
         """
         Get app list with pagination
@@ -64,7 +106,7 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
 
 """
         tenant_id = None
-        if args["gameId"] is not None and args["gameId"] != "":
+        if "gameId" in args and args["gameId"] is not None and args["gameId"] != "":
             # 根据空间名称查询tenant_id
             name = args["gameId"] + "_us"
             tenant = Tenant.query.filter(Tenant.name == name).first()
@@ -75,6 +117,21 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
         if tenant_id is not None:
             sql = sql + f" and t1.tenant_id='{tenant_id}' "
             count_sql = count_sql + f" and t1.tenant_id='{tenant_id}' "
+
+        # xxx 这个错误， workplace跟gameId是冲突的
+        # if "workplaces" in args and args["workplaces"] is not None and len(args["workplaces"])>0:
+        #     workplaces = args["workplaces"]
+        #     quoted_items = [f"'{x}'" for x in workplaces]
+        #     work_place_sql = f"({', '.join(quoted_items)})"
+        #     sql = sql + f" and t3.name in {work_place_sql} "
+        #     count_sql = count_sql + f" and t3.name in {work_place_sql}) "
+
+        if "userNames" in args and args["userNames"] is not None and len(args["userNames"])>0:
+            userNames = args["userNames"]
+            quoted_items = [f"'{x}'" for x in userNames]
+            user_names_sql = f"({', '.join(quoted_items)})"
+            sql = sql + f" and t2.name in {user_names_sql} "
+            count_sql = count_sql + f" and t2.name in {user_names_sql} "
 
         orderDirect = "asc"
         if "orderDirect" in args and args["orderDirect"] is not None:
@@ -87,6 +144,8 @@ where (t1.name like '%{searchKey}%' or t2.name like '%{searchKey}%')
         if "offset" in args and args["offset"] is not None:
             offset = args["offset"]
         sql = sql + f" LIMIT {pageSize} OFFSET {offset} "
+
+        print(sql)
 
         total_count_result = db.session.execute(text(count_sql), {})
         total_count_first_row = total_count_result.fetchone()
