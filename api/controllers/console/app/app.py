@@ -107,7 +107,7 @@ class AllAppListApi(Resource):
 
         def username_list(value):
             try:
-                return [str(v) for v in value.split(",")]
+                return [str(v) for v in value.split(",") if v.strip()]
             except ValueError:
                 abort(400, message="Invalid userName format in userNames.")
 
